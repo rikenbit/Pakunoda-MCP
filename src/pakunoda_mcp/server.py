@@ -75,6 +75,17 @@ def resource_candidates() -> str:
 
 
 @mcp.resource(
+    "pakunoda://project/summary",
+    name="project_summary",
+    description="Project summary with candidate ranking",
+    mime_type="application/json",
+)
+def resource_summary() -> str:
+    adapter = ProjectAdapter(_get_reader())
+    return json.dumps(adapter.summary(), indent=2)
+
+
+@mcp.resource(
     "pakunoda://search/summary",
     name="search_summary",
     description="Search recommendation and best trials",
@@ -83,6 +94,20 @@ def resource_candidates() -> str:
 def resource_search_summary() -> str:
     adapter = SearchAdapter(_get_reader())
     return json.dumps(adapter.combined_summary(), indent=2)
+
+
+@mcp.resource(
+    "pakunoda://search/trials",
+    name="search_trials",
+    description="All hyperparameter search trial records",
+    mime_type="application/json",
+)
+def resource_search_trials() -> str:
+    adapter = SearchAdapter(_get_reader())
+    try:
+        return json.dumps(adapter.trials(), indent=2)
+    except FileNotFoundError:
+        return json.dumps([])
 
 
 # ── Tools ────────────────────────────────────────────────────────────
@@ -149,6 +174,61 @@ def tool_recommend_model() -> str:
                 "recommendation.yaml not found. "
                 "Run Pakunoda search first (search.enabled: true)."
             )
+        })
+
+
+@mcp.tool(
+    name="get_candidate_details",
+    description=(
+        "Return full detail for a single candidate: blocks, mode assignments, "
+        "couplings, and solver family. Use enumerate_candidates first to get IDs."
+    ),
+)
+def tool_get_candidate_details(candidate_id: str) -> str:
+    adapter = CandidatesAdapter(_get_reader())
+    try:
+        return json.dumps(adapter.get_details(candidate_id), indent=2)
+    except KeyError as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool(
+    name="get_candidate_result",
+    description=(
+        "Return the run result for a candidate (reconstruction output). "
+        "Use enumerate_candidates first to get IDs."
+    ),
+)
+def tool_get_candidate_result(candidate_id: str) -> str:
+    adapter = CandidatesAdapter(_get_reader())
+    try:
+        return json.dumps(adapter.get_result(candidate_id), indent=2)
+    except KeyError as e:
+        return json.dumps({"error": str(e)})
+    except FileNotFoundError:
+        return json.dumps({
+            "error": f"Result file not found for candidate {candidate_id!r}. "
+                     "Has the pipeline been run?"
+        })
+
+
+@mcp.tool(
+    name="get_candidate_score",
+    description=(
+        "Return the score for a candidate (e.g. reconstruction error). "
+        "Use enumerate_candidates first to get IDs."
+    ),
+)
+def tool_get_candidate_score(candidate_id: str) -> str:
+    adapter = CandidatesAdapter(_get_reader())
+    try:
+        return json.dumps(adapter.get_score(candidate_id), indent=2)
+    except KeyError as e:
+        return json.dumps({"error": str(e)})
+    except FileNotFoundError:
+        return json.dumps({
+            "error": f"Score file not found for candidate {candidate_id!r}. "
+                     "Has the pipeline been run?"
         })
 
 

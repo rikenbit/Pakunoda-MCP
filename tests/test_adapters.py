@@ -87,6 +87,61 @@ def test_candidates_summarize(results_dir: Path) -> None:
     assert "mode_assignments" not in c
 
 
+def test_candidates_get_details(results_dir: Path) -> None:
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    detail = adapter.get_details("c0_expression_methylation")
+    assert detail["id"] == "c0_expression_methylation"
+    assert "mode_assignments" in detail
+    assert detail["blocks"] == ["expression", "methylation"]
+
+
+def test_candidates_get_details_missing(results_dir: Path) -> None:
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    with pytest.raises(KeyError, match="no_such"):
+        adapter.get_details("no_such")
+
+
+def test_candidates_get_result(results_dir: Path) -> None:
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    result = adapter.get_result("c0_expression_methylation")
+    assert result["candidate_id"] == "c0_expression_methylation"
+    assert result["status"] == "success"
+
+
+def test_candidates_get_result_bad_id(results_dir: Path) -> None:
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    with pytest.raises(KeyError, match="no_such"):
+        adapter.get_result("no_such")
+
+
+def test_candidates_get_result_no_file(results_dir: Path) -> None:
+    """Valid candidate_id but result file does not exist."""
+    # Remove the result file
+    (results_dir / "runs" / "c0_expression_methylation" / "result.json").unlink()
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    with pytest.raises(FileNotFoundError):
+        adapter.get_result("c0_expression_methylation")
+
+
+def test_candidates_get_score(results_dir: Path) -> None:
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    score = adapter.get_score("c0_expression_methylation")
+    assert score["imputation_rmse"] == pytest.approx(0.035)
+
+
+def test_candidates_get_score_bad_id(results_dir: Path) -> None:
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    with pytest.raises(KeyError, match="no_such"):
+        adapter.get_score("no_such")
+
+
+def test_candidates_get_score_no_file(results_dir: Path) -> None:
+    (results_dir / "scores" / "c0_expression_methylation.score.json").unlink()
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    with pytest.raises(FileNotFoundError):
+        adapter.get_score("c0_expression_methylation")
+
+
 def test_candidates_missing(tmp_path: Path) -> None:
     root = tmp_path / "empty"
     root.mkdir()
@@ -104,6 +159,22 @@ def test_candidates_malformed(results_dir: Path) -> None:
 
 
 # ── SearchAdapter ──
+
+
+def test_search_trials(results_dir: Path) -> None:
+    adapter = SearchAdapter(ProjectReader(results_dir))
+    trials = adapter.trials()
+    assert len(trials) == 1
+    assert trials[0]["candidate_id"] == "c0_expression_methylation"
+
+
+def test_search_trials_missing(tmp_path: Path) -> None:
+    root = tmp_path / "no_trials"
+    root.mkdir()
+    (root / "config.yaml").write_text("project: {id: x}")
+    adapter = SearchAdapter(ProjectReader(root))
+    with pytest.raises(FileNotFoundError):
+        adapter.trials()
 
 
 def test_search_combined_summary(results_dir: Path) -> None:

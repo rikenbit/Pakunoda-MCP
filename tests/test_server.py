@@ -39,6 +39,32 @@ def test_resource_candidates() -> None:
     assert data["num_candidates"] == 1
 
 
+def test_resource_summary() -> None:
+    raw = server.resource_summary()
+    data = json.loads(raw)
+    assert data["succeeded"] == 1
+    assert data["ranking"][0]["candidate_id"] == "c0_expression_methylation"
+
+
+def test_resource_search_trials() -> None:
+    raw = server.resource_search_trials()
+    data = json.loads(raw)
+    assert len(data) == 1
+    assert data[0]["candidate_id"] == "c0_expression_methylation"
+
+
+def test_resource_search_trials_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bare = tmp_path / "bare_trials"
+    bare.mkdir()
+    (bare.parent / "config.yaml").write_text("project: {id: bare}")
+    monkeypatch.setenv("PAKUNODA_RESULTS_DIR", str(bare))
+    raw = server.resource_search_trials()
+    data = json.loads(raw)
+    assert data == []
+
+
 def test_resource_search_summary() -> None:
     raw = server.resource_search_summary()
     data = json.loads(raw)
@@ -99,6 +125,44 @@ def test_tool_recommend_model_missing(
     (bare.parent / "config.yaml").write_text("project: {id: bare}")
     monkeypatch.setenv("PAKUNODA_RESULTS_DIR", str(bare))
     raw = server.tool_recommend_model()
+    data = json.loads(raw)
+    assert "error" in data
+
+
+def test_tool_get_candidate_details() -> None:
+    raw = server.tool_get_candidate_details("c0_expression_methylation")
+    data = json.loads(raw)
+    assert data["id"] == "c0_expression_methylation"
+    assert "mode_assignments" in data
+
+
+def test_tool_get_candidate_details_missing() -> None:
+    raw = server.tool_get_candidate_details("no_such")
+    data = json.loads(raw)
+    assert "error" in data
+
+
+def test_tool_get_candidate_result() -> None:
+    raw = server.tool_get_candidate_result("c0_expression_methylation")
+    data = json.loads(raw)
+    assert data["candidate_id"] == "c0_expression_methylation"
+    assert data["status"] == "success"
+
+
+def test_tool_get_candidate_result_missing() -> None:
+    raw = server.tool_get_candidate_result("no_such")
+    data = json.loads(raw)
+    assert "error" in data
+
+
+def test_tool_get_candidate_score() -> None:
+    raw = server.tool_get_candidate_score("c0_expression_methylation")
+    data = json.loads(raw)
+    assert data["imputation_rmse"] == pytest.approx(0.035)
+
+
+def test_tool_get_candidate_score_missing() -> None:
+    raw = server.tool_get_candidate_score("no_such")
     data = json.loads(raw)
     assert "error" in data
 

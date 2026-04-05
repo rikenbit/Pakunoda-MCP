@@ -58,6 +58,13 @@ class SearchAdapter:
         """
         return self._reader.search_recommendation()
 
+    def trials(self) -> list[dict[str, str]]:
+        """Return all search trials as a list of dicts.
+
+        Raises FileNotFoundError if search/trials.tsv is missing.
+        """
+        return self._reader.search_trials()
+
     def run_search(
         self,
         *,

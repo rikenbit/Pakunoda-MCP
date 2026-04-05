@@ -104,6 +104,49 @@ def results_dir(tmp_path: Path) -> Path:
     }
     (root / "candidates" / "candidates.json").write_text(json.dumps(candidates))
 
+    # per-candidate files
+    # candidates/{id}.problem.json
+    problem = {
+        "candidate_id": "c0_expression_methylation",
+        "blocks": ["expression", "methylation"],
+        "modes": {
+            "expression": ["genes", "samples"],
+            "methylation": ["cpg_sites", "samples"],
+        },
+        "rank": None,
+        "solver_family": "CoupledMWCA",
+    }
+    (root / "candidates" / "c0_expression_methylation.problem.json").write_text(
+        json.dumps(problem)
+    )
+
+    # runs/{id}/result.json
+    (root / "runs").mkdir()
+    (root / "runs" / "c0_expression_methylation").mkdir(parents=True)
+    result_data = {
+        "candidate_id": "c0_expression_methylation",
+        "status": "success",
+        "reconstruction_error": 0.042,
+        "runtime_seconds": 3.5,
+        "rank": 5,
+        "init_policy": "svd",
+    }
+    (root / "runs" / "c0_expression_methylation" / "result.json").write_text(
+        json.dumps(result_data)
+    )
+
+    # scores/{id}.score.json
+    (root / "scores").mkdir()
+    score_data = {
+        "candidate_id": "c0_expression_methylation",
+        "imputation_rmse": 0.035,
+        "reconstruction_error": 0.042,
+        "rank": 5,
+    }
+    (root / "scores" / "c0_expression_methylation.score.json").write_text(
+        json.dumps(score_data)
+    )
+
     # summary.json
     summary = {
         "total_candidates": 1,

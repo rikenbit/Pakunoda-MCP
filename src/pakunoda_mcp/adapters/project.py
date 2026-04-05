@@ -21,6 +21,10 @@ class ProjectAdapter:
         """Return the block-mode relation graph."""
         return self._reader.relation_graph()
 
+    def summary(self) -> dict[str, Any]:
+        """Return the project summary (summary.json)."""
+        return self._reader.summary()
+
     def refresh(self) -> dict[str, Any]:
         """Re-read all project state and return a snapshot.
 

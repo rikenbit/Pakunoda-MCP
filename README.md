@@ -29,7 +29,9 @@ they do not import Pakunoda internals or execute arbitrary commands.
 | `pakunoda://project/config` | Project configuration (config.yaml) |
 | `pakunoda://project/graph` | Block-mode relation graph |
 | `pakunoda://project/candidates` | All enumerated candidates |
+| `pakunoda://project/summary` | Project summary with candidate ranking |
 | `pakunoda://search/summary` | Search recommendation + best trials |
+| `pakunoda://search/trials` | All hyperparameter search trial records |
 
 ## Tools
 
@@ -39,6 +41,9 @@ they do not import Pakunoda internals or execute arbitrary commands.
 |---|---|
 | `validate_project` | Check which output files are present |
 | `enumerate_candidates` | List candidates with blocks and couplings |
+| `get_candidate_details` | Full detail for a single candidate (by ID) |
+| `get_candidate_result` | Run result for a single candidate (by ID) |
+| `get_candidate_score` | Score for a single candidate (by ID) |
 | `summarize_search` | Summarize hyperparameter search results |
 | `recommend_model` | Return search recommendation |
 
@@ -57,6 +62,18 @@ they do not import Pakunoda internals or execute arbitrary commands.
 | `goal` | Search objective | `"imputation"` |
 | `max_trials` | Max trials per candidate | Pakunoda default (20) |
 | `cores` | Snakemake cores | 1 |
+
+### Navigation: list → detail
+
+The read-only tools are designed for a **list → detail** workflow:
+
+1. `enumerate_candidates` — get a compact list of all candidate IDs
+2. `get_candidate_details(candidate_id)` — full mode assignments and couplings
+3. `get_candidate_result(candidate_id)` — reconstruction output from the run
+4. `get_candidate_score(candidate_id)` — imputation/reconstruction error score
+
+Similarly for search: use `summarize_search` to find the best candidate,
+then drill into the per-candidate tools above.
 
 Low-level Optuna API, solver parameters, and init policies are NOT directly
 exposed — they are controlled via Pakunoda's config.yaml.

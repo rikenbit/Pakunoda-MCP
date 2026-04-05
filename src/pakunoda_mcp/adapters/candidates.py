@@ -39,3 +39,43 @@ class CandidatesAdapter:
             "num_candidates": len(summaries),
             "candidates": summaries,
         }
+
+    def _find_candidate(self, candidate_id: str) -> dict[str, Any]:
+        """Find a candidate by id in candidates.json.
+
+        Raises KeyError if the candidate_id is not found.
+        """
+        data = self._reader.candidates()
+        for c in data.get("candidates", []):
+            if c["id"] == candidate_id:
+                return c
+        known = [c["id"] for c in data.get("candidates", [])]
+        raise KeyError(
+            f"Candidate {candidate_id!r} not found. "
+            f"Known candidates: {known}"
+        )
+
+    def get_details(self, candidate_id: str) -> dict[str, Any]:
+        """Return full detail for a single candidate (from candidates.json).
+
+        Raises KeyError if candidate_id is not found.
+        """
+        return self._find_candidate(candidate_id)
+
+    def get_result(self, candidate_id: str) -> dict[str, Any]:
+        """Return the run result for a candidate.
+
+        Raises KeyError if the candidate_id is not in candidates.json.
+        Raises FileNotFoundError if the result file does not exist.
+        """
+        self._find_candidate(candidate_id)  # validate id exists
+        return self._reader.candidate_result(candidate_id)
+
+    def get_score(self, candidate_id: str) -> dict[str, Any]:
+        """Return the score for a candidate.
+
+        Raises KeyError if the candidate_id is not in candidates.json.
+        Raises FileNotFoundError if the score file does not exist.
+        """
+        self._find_candidate(candidate_id)  # validate id exists
+        return self._reader.candidate_score(candidate_id)
