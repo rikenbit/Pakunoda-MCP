@@ -67,6 +67,18 @@ def test_search_trials(results_dir: Path) -> None:
     assert trials[0]["rank"] == "5"  # TSV reads as strings
 
 
+def test_project_id(results_dir: Path) -> None:
+    reader = ProjectReader(results_dir)
+    assert reader.project_id() == "demo"
+
+
+def test_project_id_missing(tmp_path: Path) -> None:
+    root = tmp_path / "no_config"
+    root.mkdir()
+    reader = ProjectReader(root)
+    assert reader.project_id() is None
+
+
 def test_missing_dir(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         ProjectReader(tmp_path / "nonexistent")

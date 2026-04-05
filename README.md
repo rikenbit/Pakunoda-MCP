@@ -40,7 +40,7 @@ they do not import Pakunoda internals or execute arbitrary commands.
 
 | Tool | Description |
 |---|---|
-| `validate_project` | Check which output files are present |
+| `validate_project` | Check project identity and which output files are present |
 | `enumerate_candidates` | List candidates with blocks and couplings |
 | `get_candidate_details` | Full detail for a single candidate (by ID) |
 | `get_candidate_problem` | Compiled problem for a single candidate (by ID) |
@@ -55,6 +55,10 @@ they do not import Pakunoda internals or execute arbitrary commands.
 |---|---|
 | `run_search` | Launch Pakunoda search pipeline (goal, max_trials, project_path) |
 | `refresh_project_state` | Re-read all project outputs after a pipeline run |
+
+`run_search` verifies that the `project.id` in the target config matches the
+current `PAKUNODA_RESULTS_DIR` project. If they differ, the request is rejected
+with a clear mismatch error to prevent running a search against the wrong project.
 
 `run_search` accepts high-level parameters only:
 

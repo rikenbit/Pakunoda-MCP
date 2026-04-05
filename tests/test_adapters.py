@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from pakunoda_mcp.adapters import CandidatesAdapter, ProjectAdapter, SearchAdapter
 from pakunoda_mcp.reader import ProjectReader
@@ -28,6 +29,19 @@ def test_project_graph(results_dir: Path) -> None:
     graph = adapter.relation_graph()
     assert len(graph["nodes"]) == 4
     assert graph["edges"][0]["type"] == "exact"
+
+
+def test_project_id(results_dir: Path) -> None:
+    adapter = ProjectAdapter(ProjectReader(results_dir))
+    assert adapter.project_id() == "demo"
+
+
+def test_project_id_missing(tmp_path: Path) -> None:
+    root = tmp_path / "no_config"
+    root.mkdir()
+    # No config.yaml at all — should return None, not raise
+    adapter = ProjectAdapter(ProjectReader(root))
+    assert adapter.project_id() is None
 
 
 def test_project_file_status_all_present(results_dir: Path) -> None:
@@ -299,6 +313,20 @@ def test_run_search_failure(
     assert result["detail"]["returncode"] == 1
 
 
+def test_run_search_project_mismatch(
+    results_dir: Path, tmp_path: Path
+) -> None:
+    """run_search rejects when target config project_id differs."""
+    other_config = tmp_path / "other_config.yaml"
+    other_config.write_text(yaml.dump({"project": {"id": "other_project"}}))
+    adapter = SearchAdapter(ProjectReader(results_dir))
+    result = adapter.run_search(config_path=other_config)
+    assert result["accepted"] is False
+    assert "mismatch" in result["message"].lower()
+    assert "demo" in result["message"]
+    assert "other_project" in result["message"]
+
+
 def test_run_search_unsupported_goal(results_dir: Path) -> None:
     # goal validation happens before runner is called — no repo needed
     config_path = results_dir.parent / "config.yaml"
@@ -359,6 +387,7 @@ def test_run_search_uses_absolute_snakefile(
 def test_refresh_all_present(results_dir: Path) -> None:
     adapter = ProjectAdapter(ProjectReader(results_dir))
     snapshot = adapter.refresh()
+    assert snapshot["project_id"] == "demo"
     assert snapshot["config"]["project"]["id"] == "demo"
     assert snapshot["relation_graph"] is not None
     assert snapshot["candidates"] is not None

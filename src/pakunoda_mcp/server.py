@@ -142,7 +142,11 @@ def tool_validate_project() -> str:
     reader = _get_reader()
     adapter = ProjectAdapter(reader)
     return json.dumps(
-        {"results_dir": str(reader.root), "files": adapter.file_status()},
+        {
+            "results_dir": str(reader.root),
+            "project_id": adapter.project_id(),
+            "files": adapter.file_status(),
+        },
         indent=2,
     )
 
@@ -328,12 +332,17 @@ def prompt_inspect_project() -> list[dict]:
             "content": (
                 "Inspect this Pakunoda project step by step:\n"
                 "\n"
-                "1. Call `validate_project` to check which output files exist.\n"
+                "1. Call `validate_project` — note the `project_id` and "
+                "check which output files exist. Flag any missing files.\n"
                 "2. Call `enumerate_candidates` to see how many candidates "
                 "were generated and list their IDs.\n"
                 "3. Call `summarize_search` to see the best trial per "
-                "candidate. If search has not been run, note that.\n"
-                "4. Call `recommend_model` to get the recommendation.\n"
+                "candidate. If search has not been run yet (error response), "
+                "report that search results are **unavailable** and skip "
+                "step 4.\n"
+                "4. Call `recommend_model` to get the recommendation. "
+                "If the recommendation is missing, report it as "
+                "**unavailable**.\n"
                 "\n"
                 "After each step, briefly report what you found before "
                 "moving to the next. At the end, give a short overall "
@@ -368,8 +377,9 @@ def prompt_compare_candidates(candidate_a: str, candidate_b: str) -> list[dict]:
                 "4. **Score** — call `get_candidate_score` for each. "
                 "Compare imputation RMSE and reconstruction error.\n"
                 "\n"
-                "If any tool returns an error (missing file), mark that stage "
-                "as **unavailable** for that candidate and move on.\n"
+                "For each stage, if a tool returns an error for one or both "
+                "candidates (missing file), mark that stage as "
+                "**unavailable** for the affected candidate and move on.\n"
                 "\n"
                 "Present each stage as a short comparison table or bullet list. "
                 "At the end, summarize which candidate is better and why."

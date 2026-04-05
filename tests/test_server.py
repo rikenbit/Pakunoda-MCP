@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from pakunoda_mcp import server
 
@@ -91,6 +92,7 @@ def test_resource_search_summary_missing(
 def test_tool_validate_project() -> None:
     raw = server.tool_validate_project()
     data = json.loads(raw)
+    assert data["project_id"] == "demo"
     assert data["files"]["config"] == "ok"
     assert data["files"]["candidates"] == "ok"
     assert data["files"]["relation_graph"] == "ok"
@@ -247,6 +249,20 @@ def test_tool_run_search_bad_goal(results_dir: Path) -> None:
     assert "Unsupported goal" in data["message"]
 
 
+def test_tool_run_search_project_mismatch(
+    results_dir: Path, tmp_path: Path
+) -> None:
+    """run_search rejects when config project_id differs from results."""
+    other_config = tmp_path / "other_config.yaml"
+    other_config.write_text(yaml.dump({"project": {"id": "other_project"}}))
+    raw = server.tool_run_search(project_path=str(other_config))
+    data = json.loads(raw)
+    assert data["accepted"] is False
+    assert "mismatch" in data["message"].lower()
+    assert "demo" in data["message"]
+    assert "other_project" in data["message"]
+
+
 def test_tool_refresh_project_state(results_dir: Path) -> None:
     raw = server.tool_refresh_project_state()
     data = json.loads(raw)
@@ -266,9 +282,12 @@ def test_prompt_inspect_project() -> None:
     assert messages[0]["role"] == "user"
     content = messages[0]["content"]
     assert "validate_project" in content
+    assert "project_id" in content
     assert "enumerate_candidates" in content
     assert "summarize_search" in content
     assert "recommend_model" in content
+    # Missing-state handling
+    assert "unavailable" in content.lower()
     # Prompts must not invoke write tools
     assert "run_search" not in content
     assert "refresh_project_state" not in content

@@ -13,6 +13,10 @@ class ProjectAdapter:
     def __init__(self, reader: ProjectReader) -> None:
         self._reader = reader
 
+    def project_id(self) -> str | None:
+        """Return the current project id, or None if unavailable."""
+        return self._reader.project_id()
+
     def config(self) -> dict[str, Any]:
         """Return the project configuration."""
         return self._reader.config()
@@ -31,7 +35,7 @@ class ProjectAdapter:
         Returns a dict with the current value (or None/error string)
         for each major output: config, graph, candidates, search summary.
         """
-        snapshot: dict[str, Any] = {}
+        snapshot: dict[str, Any] = {"project_id": self._reader.project_id()}
         for key, fn in [
             ("config", self._reader.config),
             ("relation_graph", self._reader.relation_graph),

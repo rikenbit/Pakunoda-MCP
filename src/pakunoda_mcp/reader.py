@@ -60,6 +60,14 @@ class ProjectReader:
             f"config.yaml not found in {self.root} or {self.root.parent}"
         )
 
+    def project_id(self) -> str | None:
+        """Extract project.id from config.yaml, or None if unavailable."""
+        try:
+            cfg = self.config()
+            return cfg.get("project", {}).get("id")
+        except (FileNotFoundError, Exception):
+            return None
+
     def relation_graph(self) -> dict[str, Any]:
         return self._read_json("graph/relation_graph.json")
 

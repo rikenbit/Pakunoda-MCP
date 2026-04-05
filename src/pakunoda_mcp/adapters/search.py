@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from pakunoda_mcp.reader import ProjectReader
 from pakunoda_mcp.runner import RunResult, run_snakemake
 
@@ -98,6 +100,26 @@ class SearchAdapter:
                 "accepted": False,
                 "message": f"Unsupported goal {goal!r}. Only 'imputation' is supported.",
             }
+
+        # ── Project identity check ──
+        current_id = self._reader.project_id()
+        if current_id is not None:
+            target_path = Path(config_path)
+            try:
+                target_cfg = yaml.safe_load(target_path.read_text())
+                target_id = target_cfg.get("project", {}).get("id")
+            except Exception:
+                target_id = None
+            if target_id is not None and target_id != current_id:
+                return {
+                    "accepted": False,
+                    "message": (
+                        f"Project mismatch: PAKUNODA_RESULTS_DIR belongs to "
+                        f"project {current_id!r} but config at {config_path} "
+                        f"belongs to project {target_id!r}. "
+                        f"Refusing to run search on a different project."
+                    ),
+                }
 
         extra_args: list[str] = []
         if max_trials is not None:
