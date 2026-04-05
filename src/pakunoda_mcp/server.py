@@ -311,6 +311,70 @@ def tool_refresh_project_state() -> str:
     return json.dumps(adapter.refresh(), indent=2, default=str)
 
 
+# ── Prompts ─────────────────────────────────────────────────────────
+
+@mcp.prompt(
+    name="inspect_project",
+    description=(
+        "Guided inspection of a Pakunoda project: validates outputs, "
+        "summarizes candidates and search results, then shows the "
+        "recommendation."
+    ),
+)
+def prompt_inspect_project() -> list[dict]:
+    return [
+        {
+            "role": "user",
+            "content": (
+                "Inspect this Pakunoda project step by step:\n"
+                "\n"
+                "1. Call `validate_project` to check which output files exist.\n"
+                "2. Call `enumerate_candidates` to see how many candidates "
+                "were generated and list their IDs.\n"
+                "3. Call `summarize_search` to see the best trial per "
+                "candidate. If search has not been run, note that.\n"
+                "4. Call `recommend_model` to get the recommendation.\n"
+                "\n"
+                "After each step, briefly report what you found before "
+                "moving to the next. At the end, give a short overall "
+                "assessment: is the project healthy, are there missing "
+                "outputs, and which candidate looks most promising?"
+            ),
+        }
+    ]
+
+
+@mcp.prompt(
+    name="compare_candidates",
+    description=(
+        "Side-by-side comparison of two candidates across all four "
+        "stages: definition, compiled problem, run result, and score."
+    ),
+)
+def prompt_compare_candidates(candidate_a: str, candidate_b: str) -> list[dict]:
+    return [
+        {
+            "role": "user",
+            "content": (
+                f"Compare candidates `{candidate_a}` and `{candidate_b}` "
+                "side by side through all four stages:\n"
+                "\n"
+                "1. **Definition** — call `get_candidate_details` for each. "
+                "Compare blocks, mode assignments, couplings, and solver family.\n"
+                "2. **Compiled problem** — call `get_candidate_problem` for each. "
+                "Compare tensor shapes, rank bounds, and coupling constraints.\n"
+                "3. **Run result** — call `get_candidate_result` for each. "
+                "Compare reconstruction error, runtime, and status.\n"
+                "4. **Score** — call `get_candidate_score` for each. "
+                "Compare imputation RMSE and reconstruction error.\n"
+                "\n"
+                "Present each stage as a short comparison table or bullet list. "
+                "At the end, summarize which candidate is better and why."
+            ),
+        }
+    ]
+
+
 # ── Entry point ──────────────────────────────────────────────────────
 
 def main() -> None:

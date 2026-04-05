@@ -93,6 +93,16 @@ The definition is static once candidates are enumerated.
 The problem is compiled from definition + input data.
 The result and score are produced by running the solver.
 
+### Prompts
+
+Prompts are pre-built instruction templates that guide the AI agent through
+common workflows using the existing tools.
+
+| Prompt | Parameters | What it does |
+|---|---|---|
+| `inspect_project` | (none) | Walks through validate → enumerate → search summary → recommendation |
+| `compare_candidates` | `candidate_a`, `candidate_b` | Side-by-side comparison across definition / problem / result / score |
+
 Low-level Optuna API, solver parameters, and init policies are NOT directly
 exposed — they are controlled via Pakunoda's config.yaml.
 
@@ -169,7 +179,6 @@ pytest
 - **Minimal write**: only `run_search` (via Snakemake subprocess) — no config generation, no freeze/release
 - **No arbitrary execution**: runner has a fixed allow-list of Snakemake targets
 - **Single project**: one results directory per server instance
-- **No prompts yet**: MCP prompt templates are not implemented
 - **stdio only**: no HTTP/SSE transport
 - **No auth**: intended for local use
 

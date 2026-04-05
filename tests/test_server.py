@@ -254,3 +254,32 @@ def test_tool_refresh_project_state(results_dir: Path) -> None:
     assert data["relation_graph"] is not None
     assert data["candidates"] is not None
     assert data["search_recommendation"] is not None
+
+
+# ── Prompts ──
+
+
+def test_prompt_inspect_project() -> None:
+    messages = server.prompt_inspect_project()
+    assert isinstance(messages, list)
+    assert len(messages) == 1
+    assert messages[0]["role"] == "user"
+    content = messages[0]["content"]
+    assert "validate_project" in content
+    assert "enumerate_candidates" in content
+    assert "summarize_search" in content
+    assert "recommend_model" in content
+
+
+def test_prompt_compare_candidates() -> None:
+    messages = server.prompt_compare_candidates("c0_alpha", "c1_beta")
+    assert isinstance(messages, list)
+    assert len(messages) == 1
+    assert messages[0]["role"] == "user"
+    content = messages[0]["content"]
+    assert "c0_alpha" in content
+    assert "c1_beta" in content
+    assert "get_candidate_details" in content
+    assert "get_candidate_problem" in content
+    assert "get_candidate_result" in content
+    assert "get_candidate_score" in content
