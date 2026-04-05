@@ -269,6 +269,9 @@ def test_prompt_inspect_project() -> None:
     assert "enumerate_candidates" in content
     assert "summarize_search" in content
     assert "recommend_model" in content
+    # Prompts must not invoke write tools
+    assert "run_search" not in content
+    assert "refresh_project_state" not in content
 
 
 def test_prompt_compare_candidates() -> None:
@@ -283,3 +286,8 @@ def test_prompt_compare_candidates() -> None:
     assert "get_candidate_problem" in content
     assert "get_candidate_result" in content
     assert "get_candidate_score" in content
+    # Missing data instruction
+    assert "unavailable" in content.lower()
+    # Prompts must not invoke write tools
+    assert "run_search" not in content
+    assert "refresh_project_state" not in content

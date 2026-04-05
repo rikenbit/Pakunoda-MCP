@@ -368,6 +368,9 @@ def prompt_compare_candidates(candidate_a: str, candidate_b: str) -> list[dict]:
                 "4. **Score** — call `get_candidate_score` for each. "
                 "Compare imputation RMSE and reconstruction error.\n"
                 "\n"
+                "If any tool returns an error (missing file), mark that stage "
+                "as **unavailable** for that candidate and move on.\n"
+                "\n"
                 "Present each stage as a short comparison table or bullet list. "
                 "At the end, summarize which candidate is better and why."
             ),
