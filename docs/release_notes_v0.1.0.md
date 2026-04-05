@@ -1,94 +1,57 @@
 # Pakunoda-MCP v0.1.0
 
-Initial release of the MCP server for [Pakunoda](https://github.com/rikenbit/Pakunoda) project state.
+MCP server that exposes [Pakunoda](https://github.com/rikenbit/Pakunoda) multi-block tensor decomposition results to AI agents. Read project state, inspect candidates, review search results, and trigger hyperparameter searches — all through a structured MCP interface over stdio.
 
-## What is Pakunoda-MCP?
-
-An [MCP](https://modelcontextprotocol.io/) server that exposes Pakunoda's
-multi-block tensor decomposition results to AI agents over stdio transport.
-Agents can browse project state, inspect candidates, review search results,
-and trigger hyperparameter searches — all through a structured MCP interface.
+**Highlights**: 7 resources, 10 tools (8 read / 2 write), 2 prompts, project identity safety check, 101 tests.
 
 ## Resources (7)
 
 | URI | Description |
 |---|---|
-| `pakunoda://project/config` | Project configuration (config.yaml) |
+| `pakunoda://project/config` | Project configuration |
 | `pakunoda://project/graph` | Block-mode relation graph |
 | `pakunoda://project/candidates` | All enumerated candidates |
-| `pakunoda://project/summary` | Project summary with candidate ranking |
-| `pakunoda://candidate/{candidate_id}/problem` | Compiled problem for a specific candidate |
+| `pakunoda://project/summary` | Project summary with ranking |
+| `pakunoda://candidate/{candidate_id}/problem` | Compiled problem (template) |
 | `pakunoda://search/summary` | Search recommendation + best trials |
 | `pakunoda://search/trials` | All search trial records |
 
 ## Tools (10)
 
-### Read-only (8)
+**Read-only (8)**: `validate_project`, `enumerate_candidates`, `get_candidate_details`, `get_candidate_problem`, `get_candidate_result`, `get_candidate_score`, `summarize_search`, `recommend_model`
 
-| Tool | Description |
-|---|---|
-| `validate_project` | Check project identity and output file status |
-| `enumerate_candidates` | List all candidates (compact summary) |
-| `get_candidate_details` | Full candidate definition (blocks, modes, couplings) |
-| `get_candidate_problem` | Compiled tensor decomposition problem |
-| `get_candidate_result` | Run result (reconstruction output, runtime) |
-| `get_candidate_score` | Score (imputation RMSE, reconstruction error) |
-| `summarize_search` | Best trials per candidate |
-| `recommend_model` | Search recommendation with explanation |
-
-### Write (2)
-
-| Tool | Description |
-|---|---|
-| `run_search` | Launch Pakunoda search pipeline via Snakemake |
-| `refresh_project_state` | Re-read all project outputs |
+**Write (2)**: `run_search`, `refresh_project_state`
 
 ## Prompts (2)
 
-| Prompt | Description |
-|---|---|
-| `inspect_project` | Guided project health check: validate → enumerate → search → recommend |
-| `compare_candidates` | Side-by-side comparison of two candidates across all four stages |
+- **`inspect_project`** — guided project health check (validate → enumerate → search → recommend)
+- **`compare_candidates`** — side-by-side comparison of two candidates across definition / problem / result / score
 
 ## Safety
 
-- **Allow-list runner**: only the `search` target (mapped to Snakemake rule `recommend`) is permitted — no arbitrary command execution
-- **Project identity check**: `run_search` compares `project.id` between the results directory and the target config, rejecting mismatches before any subprocess runs
-- **Pinned execution context**: Snakemake runs with absolute `--snakefile` path and `cwd=PAKUNODA_REPO_DIR`, independent of where the MCP server was started
+- **Allow-list runner**: only the `search` Snakemake target is permitted
+- **Project identity check**: `run_search` rejects config/results `project.id` mismatch
+- **Pinned execution context**: absolute `--snakefile` path + `cwd=PAKUNODA_REPO_DIR`
 
 ## Environment variables
 
 | Variable | Required for | Description |
 |---|---|---|
-| `PAKUNODA_RESULTS_DIR` | All operations | Path to a Pakunoda results directory |
-| `PAKUNODA_REPO_DIR` | Write tools only | Path to the Pakunoda repository root |
+| `PAKUNODA_RESULTS_DIR` | All operations | Path to Pakunoda results directory |
+| `PAKUNODA_REPO_DIR` | Write tools only | Path to Pakunoda repository root |
 
-## Installation
+## Install
 
 ```bash
 pip install -e .
-```
-
-Or with Docker:
-
-```bash
-docker build -t pakunoda-mcp .
-docker run --rm -v /path/to/results:/data:ro -e PAKUNODA_RESULTS_DIR=/data/my_project -i pakunoda-mcp
+pakunoda-mcp
 ```
 
 ## Current limitations
 
-- **Minimal write**: only `run_search` — no config generation or freeze/release
-- **Single project**: one results directory per server instance
-- **stdio only**: no HTTP/SSE transport
-- **No auth**: intended for local use
-- **No PyPI publish**: install from source
+- Single project per server instance
+- stdio transport only (no HTTP/SSE)
+- No auth (local use)
+- Not published to PyPI
 
-## Test coverage
-
-101 tests across 5 test modules:
-- `test_reader.py` (12) — file I/O layer
-- `test_adapters.py` (41) — domain adapter layer
-- `test_runner.py` (11) — subprocess runner
-- `test_server.py` (31) — MCP server tools/resources/prompts
-- `test_smoke.py` (6) — registration completeness guard
+Full API reference: [docs/api.md](api.md)
