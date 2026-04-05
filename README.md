@@ -30,6 +30,7 @@ they do not import Pakunoda internals or execute arbitrary commands.
 | `pakunoda://project/graph` | Block-mode relation graph |
 | `pakunoda://project/candidates` | All enumerated candidates |
 | `pakunoda://project/summary` | Project summary with candidate ranking |
+| `pakunoda://candidate/{candidate_id}/problem` | Compiled problem for a specific candidate |
 | `pakunoda://search/summary` | Search recommendation + best trials |
 | `pakunoda://search/trials` | All hyperparameter search trial records |
 
@@ -42,6 +43,7 @@ they do not import Pakunoda internals or execute arbitrary commands.
 | `validate_project` | Check which output files are present |
 | `enumerate_candidates` | List candidates with blocks and couplings |
 | `get_candidate_details` | Full detail for a single candidate (by ID) |
+| `get_candidate_problem` | Compiled problem for a single candidate (by ID) |
 | `get_candidate_result` | Run result for a single candidate (by ID) |
 | `get_candidate_score` | Score for a single candidate (by ID) |
 | `summarize_search` | Summarize hyperparameter search results |
@@ -69,11 +71,27 @@ The read-only tools are designed for a **list → detail** workflow:
 
 1. `enumerate_candidates` — get a compact list of all candidate IDs
 2. `get_candidate_details(candidate_id)` — full mode assignments and couplings
-3. `get_candidate_result(candidate_id)` — reconstruction output from the run
-4. `get_candidate_score(candidate_id)` — imputation/reconstruction error score
+3. `get_candidate_problem(candidate_id)` — compiled problem (see below)
+4. `get_candidate_result(candidate_id)` — reconstruction output from the run
+5. `get_candidate_score(candidate_id)` — imputation/reconstruction error score
 
 Similarly for search: use `summarize_search` to find the best candidate,
 then drill into the per-candidate tools above.
+
+### Per-candidate data: definition → problem → result → score
+
+Each candidate passes through four stages. The tools above map to these:
+
+| Stage | Tool | File | What it contains |
+|---|---|---|---|
+| **Definition** | `get_candidate_details` | `candidates/candidates.json` | Which blocks to couple, mode assignments, solver family — the *what* |
+| **Compiled problem** | `get_candidate_problem` | `candidates/{id}.problem.json` | Concrete tensor shapes, coupling constraints, rank bounds — the *how* (derived from definition + data) |
+| **Run result** | `get_candidate_result` | `runs/{id}/result.json` | Reconstruction output, runtime, status — what the solver produced |
+| **Score** | `get_candidate_score` | `scores/{id}.score.json` | Imputation RMSE, reconstruction error — how good the result is |
+
+The definition is static once candidates are enumerated.
+The problem is compiled from definition + input data.
+The result and score are produced by running the solver.
 
 Low-level Optuna API, solver parameters, and init policies are NOT directly
 exposed — they are controlled via Pakunoda's config.yaml.

@@ -62,6 +62,15 @@ class CandidatesAdapter:
         """
         return self._find_candidate(candidate_id)
 
+    def get_problem(self, candidate_id: str) -> dict[str, Any]:
+        """Return the compiled problem for a candidate.
+
+        Raises KeyError if the candidate_id is not in candidates.json.
+        Raises FileNotFoundError if the problem file does not exist.
+        """
+        self._find_candidate(candidate_id)  # validate id exists
+        return self._reader.candidate_problem(candidate_id)
+
     def get_result(self, candidate_id: str) -> dict[str, Any]:
         """Return the run result for a candidate.
 

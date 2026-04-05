@@ -110,6 +110,25 @@ def resource_search_trials() -> str:
         return json.dumps([])
 
 
+@mcp.resource(
+    "pakunoda://candidate/{candidate_id}/problem",
+    name="candidate_problem",
+    description="Compiled problem JSON for a specific candidate",
+    mime_type="application/json",
+)
+def resource_candidate_problem(candidate_id: str) -> str:
+    adapter = CandidatesAdapter(_get_reader())
+    try:
+        return json.dumps(adapter.get_problem(candidate_id), indent=2)
+    except KeyError as e:
+        return json.dumps({"error": str(e)})
+    except FileNotFoundError:
+        return json.dumps({
+            "error": f"Problem file not found for candidate {candidate_id!r}. "
+                     "Has candidate enumeration been run?"
+        })
+
+
 # ── Tools ────────────────────────────────────────────────────────────
 
 @mcp.tool(
@@ -174,6 +193,27 @@ def tool_recommend_model() -> str:
                 "recommendation.yaml not found. "
                 "Run Pakunoda search first (search.enabled: true)."
             )
+        })
+
+
+@mcp.tool(
+    name="get_candidate_problem",
+    description=(
+        "Return the compiled problem for a candidate: the concrete tensor "
+        "decomposition problem derived from the candidate definition. "
+        "Use enumerate_candidates first to get IDs."
+    ),
+)
+def tool_get_candidate_problem(candidate_id: str) -> str:
+    adapter = CandidatesAdapter(_get_reader())
+    try:
+        return json.dumps(adapter.get_problem(candidate_id), indent=2)
+    except KeyError as e:
+        return json.dumps({"error": str(e)})
+    except FileNotFoundError:
+        return json.dumps({
+            "error": f"Problem file not found for candidate {candidate_id!r}. "
+                     "Has candidate enumeration been run?"
         })
 
 

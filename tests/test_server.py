@@ -129,6 +129,41 @@ def test_tool_recommend_model_missing(
     assert "error" in data
 
 
+def test_resource_candidate_problem() -> None:
+    raw = server.resource_candidate_problem("c0_expression_methylation")
+    data = json.loads(raw)
+    assert data["candidate_id"] == "c0_expression_methylation"
+    assert data["blocks"] == ["expression", "methylation"]
+
+
+def test_resource_candidate_problem_bad_id() -> None:
+    raw = server.resource_candidate_problem("no_such")
+    data = json.loads(raw)
+    assert "error" in data
+
+
+def test_tool_get_candidate_problem() -> None:
+    raw = server.tool_get_candidate_problem("c0_expression_methylation")
+    data = json.loads(raw)
+    assert data["candidate_id"] == "c0_expression_methylation"
+
+
+def test_tool_get_candidate_problem_bad_id() -> None:
+    raw = server.tool_get_candidate_problem("no_such")
+    data = json.loads(raw)
+    assert "error" in data
+
+
+def test_tool_get_candidate_problem_no_file(
+    results_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (results_dir / "candidates" / "c0_expression_methylation.problem.json").unlink()
+    raw = server.tool_get_candidate_problem("c0_expression_methylation")
+    data = json.loads(raw)
+    assert "error" in data
+    assert "Problem file not found" in data["error"]
+
+
 def test_tool_get_candidate_details() -> None:
     raw = server.tool_get_candidate_details("c0_expression_methylation")
     data = json.loads(raw)

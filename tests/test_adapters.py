@@ -87,6 +87,26 @@ def test_candidates_summarize(results_dir: Path) -> None:
     assert "mode_assignments" not in c
 
 
+def test_candidates_get_problem(results_dir: Path) -> None:
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    problem = adapter.get_problem("c0_expression_methylation")
+    assert problem["candidate_id"] == "c0_expression_methylation"
+    assert problem["blocks"] == ["expression", "methylation"]
+
+
+def test_candidates_get_problem_bad_id(results_dir: Path) -> None:
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    with pytest.raises(KeyError, match="no_such"):
+        adapter.get_problem("no_such")
+
+
+def test_candidates_get_problem_no_file(results_dir: Path) -> None:
+    (results_dir / "candidates" / "c0_expression_methylation.problem.json").unlink()
+    adapter = CandidatesAdapter(ProjectReader(results_dir))
+    with pytest.raises(FileNotFoundError):
+        adapter.get_problem("c0_expression_methylation")
+
+
 def test_candidates_get_details(results_dir: Path) -> None:
     adapter = CandidatesAdapter(ProjectReader(results_dir))
     detail = adapter.get_details("c0_expression_methylation")
