@@ -3,9 +3,9 @@
 [MCP](https://modelcontextprotocol.io/) server that exposes
 [Pakunoda](https://github.com/rikenbit/Pakunoda) project state to AI agents.
 
-> **Status: Minimal MVP.** Read-only resources plus two write tools
-> (`run_search`, `refresh_project_state`). No arbitrary shell execution,
-> no direct solver parameter control.
+> **v0.1.0** — 7 resources, 10 tools (8 read / 2 write), 2 prompts.
+> No arbitrary shell execution, no direct solver parameter control.
+> See [release notes](docs/release_notes_v0.1.0.md).
 
 ## Responsibility split
 
