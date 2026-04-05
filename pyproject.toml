@@ -9,10 +9,29 @@ description = "MCP server exposing Pakunoda project state to AI agents"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
+authors = [
+    { name = "RIKEN BiT", email = "kokitsuyuzaki@gmail.com" },
+]
+keywords = ["mcp", "pakunoda", "tensor-decomposition", "bioinformatics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
 dependencies = [
     "mcp>=1.0",
     "pyyaml>=6.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/rikenbit/Pakunoda-MCP"
+Repository = "https://github.com/rikenbit/Pakunoda-MCP"
+Issues = "https://github.com/rikenbit/Pakunoda-MCP/issues"
 
 [project.scripts]
 pakunoda-mcp = "pakunoda_mcp.server:main"

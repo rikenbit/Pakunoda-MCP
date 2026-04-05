@@ -128,22 +128,35 @@ server's own working directory is irrelevant.
 ## Quick start
 
 ```bash
-# Install
 pip install -e .
 
-# Read side: point to a Pakunoda results directory
+# Required: results directory produced by Pakunoda
 export PAKUNODA_RESULTS_DIR=/path/to/results/my_project
 
-# Write side: point to the Pakunoda repository (needed for run_search)
+# Optional: Pakunoda repo root (only needed for run_search)
 export PAKUNODA_REPO_DIR=/path/to/Pakunoda
 
-# Run the MCP server (stdio transport)
 pakunoda-mcp
 ```
 
-### Claude Code / Claude Desktop
+### Claude Code
 
-Add to your MCP config:
+Add to `~/.claude/settings.json` or project `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "pakunoda": {
+      "command": "pakunoda-mcp",
+      "env": {
+        "PAKUNODA_RESULTS_DIR": "/path/to/results/my_project"
+      }
+    }
+  }
+}
+```
+
+If you also want write tools (`run_search`), add `PAKUNODA_REPO_DIR`:
 
 ```json
 {
@@ -163,6 +176,14 @@ Add to your MCP config:
 
 ```bash
 docker build -t pakunoda-mcp .
+
+# Read-only (no PAKUNODA_REPO_DIR needed)
+docker run --rm \
+  -v /path/to/results:/data:ro \
+  -e PAKUNODA_RESULTS_DIR=/data/my_project \
+  -i pakunoda-mcp
+
+# With write tools
 docker run --rm \
   -v /path/to/results:/data \
   -v /path/to/Pakunoda:/repo:ro \
@@ -170,6 +191,46 @@ docker run --rm \
   -e PAKUNODA_REPO_DIR=/repo \
   -i pakunoda-mcp
 ```
+
+## Usage examples
+
+### Read-only: inspect a project
+
+Use the `inspect_project` prompt to walk through a standard check:
+
+```
+> Use the inspect_project prompt
+(Agent calls validate_project → enumerate_candidates → summarize_search → recommend_model)
+```
+
+Or call tools directly:
+
+```
+> What candidates does this project have?
+(Agent calls enumerate_candidates)
+
+> Show me the score for c0_expression_methylation
+(Agent calls get_candidate_score("c0_expression_methylation"))
+```
+
+### Read-only: compare two candidates
+
+```
+> Use the compare_candidates prompt with c0_alpha and c1_beta
+(Agent calls get_candidate_details / get_candidate_problem /
+ get_candidate_result / get_candidate_score for each, then summarizes)
+```
+
+### Write: run a search
+
+```
+> Run a hyperparameter search with 50 trials
+(Agent calls run_search(project_path="/path/to/config.yaml", max_trials=50))
+(Agent calls refresh_project_state to see updated results)
+```
+
+`run_search` checks that `project.id` in the target config matches the
+current results directory. A mismatch is rejected before any subprocess runs.
 
 ## Development
 
