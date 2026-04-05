@@ -112,7 +112,10 @@ def test_env_not_set(monkeypatch: pytest.MonkeyPatch) -> None:
 # ── Write tools ──
 
 
-def test_tool_run_search_success(results_dir: Path) -> None:
+def test_tool_run_search_success(
+    results_dir: Path, pakunoda_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("PAKUNODA_REPO_DIR", str(pakunoda_repo))
     config_path = str(results_dir.parent / "config.yaml")
     fake = subprocess.CompletedProcess(args=[], returncode=0, stdout="ok", stderr="")
     with patch("pakunoda_mcp.runner.subprocess.run", return_value=fake):
@@ -122,7 +125,10 @@ def test_tool_run_search_success(results_dir: Path) -> None:
     assert data["search_outputs"]["recommendation"] == "ok"
 
 
-def test_tool_run_search_failure(results_dir: Path) -> None:
+def test_tool_run_search_failure(
+    results_dir: Path, pakunoda_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("PAKUNODA_REPO_DIR", str(pakunoda_repo))
     config_path = str(results_dir.parent / "config.yaml")
     fake = subprocess.CompletedProcess(
         args=[], returncode=1, stdout="", stderr="failed"
@@ -135,6 +141,7 @@ def test_tool_run_search_failure(results_dir: Path) -> None:
 
 
 def test_tool_run_search_bad_goal(results_dir: Path) -> None:
+    # goal validation before runner — no repo needed
     raw = server.tool_run_search(project_path="/any", goal="clustering")
     data = json.loads(raw)
     assert data["accepted"] is False

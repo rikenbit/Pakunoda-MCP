@@ -182,7 +182,10 @@ def _mock_snakemake_failure(*args, **kwargs):
     )
 
 
-def test_run_search_success(results_dir: Path) -> None:
+def test_run_search_success(
+    results_dir: Path, pakunoda_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("PAKUNODA_REPO_DIR", str(pakunoda_repo))
     config_path = results_dir.parent / "config.yaml"
     adapter = SearchAdapter(ProjectReader(results_dir))
     with patch("pakunoda_mcp.runner.subprocess.run", _mock_snakemake_success):
@@ -192,7 +195,10 @@ def test_run_search_success(results_dir: Path) -> None:
     assert result["search_outputs"]["recommendation"] == "ok"
 
 
-def test_run_search_failure(results_dir: Path) -> None:
+def test_run_search_failure(
+    results_dir: Path, pakunoda_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("PAKUNODA_REPO_DIR", str(pakunoda_repo))
     config_path = results_dir.parent / "config.yaml"
     adapter = SearchAdapter(ProjectReader(results_dir))
     with patch("pakunoda_mcp.runner.subprocess.run", _mock_snakemake_failure):
@@ -203,6 +209,7 @@ def test_run_search_failure(results_dir: Path) -> None:
 
 
 def test_run_search_unsupported_goal(results_dir: Path) -> None:
+    # goal validation happens before runner is called — no repo needed
     config_path = results_dir.parent / "config.yaml"
     adapter = SearchAdapter(ProjectReader(results_dir))
     result = adapter.run_search(config_path=config_path, goal="clustering")
@@ -211,6 +218,7 @@ def test_run_search_unsupported_goal(results_dir: Path) -> None:
 
 
 def test_run_search_invalid_max_trials(results_dir: Path) -> None:
+    # max_trials validation happens before runner is called — no repo needed
     config_path = results_dir.parent / "config.yaml"
     adapter = SearchAdapter(ProjectReader(results_dir))
     result = adapter.run_search(config_path=config_path, max_trials=0)
@@ -218,7 +226,10 @@ def test_run_search_invalid_max_trials(results_dir: Path) -> None:
     assert "max_trials" in result["message"]
 
 
-def test_run_search_max_trials_forwarded(results_dir: Path) -> None:
+def test_run_search_max_trials_forwarded(
+    results_dir: Path, pakunoda_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("PAKUNODA_REPO_DIR", str(pakunoda_repo))
     config_path = results_dir.parent / "config.yaml"
     adapter = SearchAdapter(ProjectReader(results_dir))
     with patch("pakunoda_mcp.runner.subprocess.run") as mock:
@@ -231,6 +242,24 @@ def test_run_search_max_trials_forwarded(results_dir: Path) -> None:
     assert "--config" in cmd
     config_idx = cmd.index("--config")
     assert "max_trials: 50" in cmd[config_idx + 1]
+
+
+def test_run_search_uses_absolute_snakefile(
+    results_dir: Path, pakunoda_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify the runner uses an absolute Snakefile path and cwd=repo_dir."""
+    monkeypatch.setenv("PAKUNODA_REPO_DIR", str(pakunoda_repo))
+    config_path = results_dir.parent / "config.yaml"
+    adapter = SearchAdapter(ProjectReader(results_dir))
+    with patch("pakunoda_mcp.runner.subprocess.run") as mock:
+        mock.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="ok", stderr=""
+        )
+        adapter.run_search(config_path=config_path)
+    cmd = mock.call_args[0][0]
+    snakefile_arg = cmd[cmd.index("--snakefile") + 1]
+    assert snakefile_arg == str(pakunoda_repo / "Snakefile")
+    assert mock.call_args[1]["cwd"] == str(pakunoda_repo)
 
 
 # ── ProjectAdapter.refresh ──

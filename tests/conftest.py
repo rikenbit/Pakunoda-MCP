@@ -176,3 +176,12 @@ def results_dir(tmp_path: Path) -> Path:
     (search_dir / "trials.tsv").write_text(trials_tsv)
 
     return root
+
+
+@pytest.fixture()
+def pakunoda_repo(tmp_path: Path) -> Path:
+    """Fake Pakunoda repo directory with a Snakefile."""
+    d = tmp_path / "pakunoda_repo"
+    d.mkdir()
+    (d / "Snakefile").write_text("# fake Snakefile for testing")
+    return d

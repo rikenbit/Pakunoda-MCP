@@ -3,10 +3,14 @@
 This module is the ONLY place that invokes external processes.
 It wraps ``snakemake`` CLI calls with a fixed allow-list of targets,
 preventing arbitrary shell execution.
+
+Execution context is pinned via ``PAKUNODA_REPO_DIR`` (the Pakunoda
+checkout that contains the Snakefile).  This eliminates cwd-dependence.
 """
 
 from __future__ import annotations
 
+import os
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,6 +36,43 @@ class RunResult:
     command: list[str] = field(repr=False)
 
 
+def _resolve_repo_dir(repo_dir: str | Path | None = None) -> Path:
+    """Return the validated Pakunoda repo directory.
+
+    Resolution order:
+      1. Explicit *repo_dir* argument
+      2. ``PAKUNODA_REPO_DIR`` environment variable
+
+    Raises
+    ------
+    RuntimeError
+        If neither source provides a value.
+    FileNotFoundError
+        If the directory or its ``Snakefile`` does not exist.
+    """
+    if repo_dir is not None:
+        resolved = Path(repo_dir).resolve()
+    else:
+        env = os.environ.get("PAKUNODA_REPO_DIR", "")
+        if not env:
+            raise RuntimeError(
+                "Set PAKUNODA_REPO_DIR to the Pakunoda repository root "
+                "(the directory containing Snakefile)."
+            )
+        resolved = Path(env).resolve()
+
+    if not resolved.is_dir():
+        raise FileNotFoundError(f"Pakunoda repo directory not found: {resolved}")
+
+    snakefile = resolved / "Snakefile"
+    if not snakefile.exists():
+        raise FileNotFoundError(
+            f"Snakefile not found in repo directory: {snakefile}"
+        )
+
+    return resolved
+
+
 def run_snakemake(
     *,
     config_path: str | Path,
@@ -39,6 +80,7 @@ def run_snakemake(
     cores: int = 1,
     snakemake_bin: str = "snakemake",
     extra_args: Sequence[str] = (),
+    repo_dir: str | Path | None = None,
 ) -> RunResult:
     """Invoke Snakemake for a known target.
 
@@ -54,6 +96,8 @@ def run_snakemake(
         Path or name of the ``snakemake`` executable.
     extra_args:
         Additional CLI flags forwarded verbatim.
+    repo_dir:
+        Pakunoda repository root.  Falls back to ``PAKUNODA_REPO_DIR``.
 
     Returns
     -------
@@ -64,7 +108,9 @@ def run_snakemake(
     ValueError
         If *target* is not in the allow-list.
     FileNotFoundError
-        If *config_path* does not exist.
+        If *config_path* or *repo_dir* / Snakefile does not exist.
+    RuntimeError
+        If *repo_dir* is ``None`` and ``PAKUNODA_REPO_DIR`` is unset.
     """
     if target not in ALLOWED_TARGETS:
         raise ValueError(
@@ -76,10 +122,13 @@ def run_snakemake(
     if not config_path.exists():
         raise FileNotFoundError(f"Config not found: {config_path}")
 
+    resolved_repo = _resolve_repo_dir(repo_dir)
+    snakefile = resolved_repo / "Snakefile"
+
     snakemake_rule = ALLOWED_TARGETS[target]
     cmd: list[str] = [
         snakemake_bin,
-        "--snakefile", "Snakefile",
+        "--snakefile", str(snakefile),
         "--configfile", str(config_path),
         "--cores", str(cores),
         "--until", snakemake_rule,
@@ -91,6 +140,7 @@ def run_snakemake(
         capture_output=True,
         text=True,
         timeout=3600,
+        cwd=str(resolved_repo),
     )
 
     return RunResult(

@@ -61,14 +61,32 @@ they do not import Pakunoda internals or execute arbitrary commands.
 Low-level Optuna API, solver parameters, and init policies are NOT directly
 exposed — they are controlled via Pakunoda's config.yaml.
 
+## Environment variables
+
+Pakunoda-MCP uses two environment variables to separate read and write concerns:
+
+| Variable | Purpose | Required for |
+|---|---|---|
+| `PAKUNODA_RESULTS_DIR` | Path to a Pakunoda results directory (e.g. `results/my_project`). Used by **all** resources and read-only tools. | All operations |
+| `PAKUNODA_REPO_DIR` | Path to the Pakunoda repository root (the directory containing `Snakefile`). Used by `run_search` to pin the execution context. | Write tools only |
+
+**Why two variables?** The results directory and the Pakunoda repo may live
+in different locations. Read-only operations need only the results.
+Write tools need the repo to locate the Snakefile — they run Snakemake
+with `cwd=PAKUNODA_REPO_DIR` and an absolute `--snakefile` path, so the
+server's own working directory is irrelevant.
+
 ## Quick start
 
 ```bash
 # Install
 pip install -e .
 
-# Point to a Pakunoda results directory
+# Read side: point to a Pakunoda results directory
 export PAKUNODA_RESULTS_DIR=/path/to/results/my_project
+
+# Write side: point to the Pakunoda repository (needed for run_search)
+export PAKUNODA_REPO_DIR=/path/to/Pakunoda
 
 # Run the MCP server (stdio transport)
 pakunoda-mcp
@@ -84,7 +102,8 @@ Add to your MCP config:
     "pakunoda": {
       "command": "pakunoda-mcp",
       "env": {
-        "PAKUNODA_RESULTS_DIR": "/path/to/results/my_project"
+        "PAKUNODA_RESULTS_DIR": "/path/to/results/my_project",
+        "PAKUNODA_REPO_DIR": "/path/to/Pakunoda"
       }
     }
   }
@@ -95,7 +114,12 @@ Add to your MCP config:
 
 ```bash
 docker build -t pakunoda-mcp .
-docker run --rm -v /path/to/results:/data -e PAKUNODA_RESULTS_DIR=/data/my_project -i pakunoda-mcp
+docker run --rm \
+  -v /path/to/results:/data \
+  -v /path/to/Pakunoda:/repo:ro \
+  -e PAKUNODA_RESULTS_DIR=/data/my_project \
+  -e PAKUNODA_REPO_DIR=/repo \
+  -i pakunoda-mcp
 ```
 
 ## Development
